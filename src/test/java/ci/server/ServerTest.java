@@ -156,4 +156,40 @@ public class ServerTest {
         assertFalse(server.isRunning(), 
             "Server should not be running before start() is called");
     }
+    
+    /**
+     * Tests that POST request to /webhook endpoint returns 200 OK.
+     */
+    @Test
+    public void testWebhookEndpoint() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        String payload = "{\"test\":\"data\"}";
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+        connection.setConnectTimeout(5000);
+        connection.setReadTimeout(5000);
+        
+        connection.getOutputStream().write(payload.getBytes());
+        connection.getOutputStream().flush();
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(200, responseCode, "Webhook endpoint should return 200 OK");
+        
+        BufferedReader reader = new BufferedReader(
+            new InputStreamReader(connection.getInputStream())
+        );
+        String response = reader.readLine();
+        reader.close();
+        connection.disconnect();
+        
+        assertEquals("Webhook received", response, 
+                    "Response should confirm webhook was received");
+    }
 }

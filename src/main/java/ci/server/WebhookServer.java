@@ -65,10 +65,12 @@ public class WebhookServer {
         server.setHandler(context);
         
         context.addServlet(new ServletHolder(new HealthCheckServlet()), "/");
+        context.addServlet(new ServletHolder(new WebhookServlet()), "/webhook");
         
         server.start();
         System.out.println("CI server started on port " + port);
         System.out.println("Health check: http://localhost:" + port + "/");
+        System.out.println("Webhook endpoint: http://localhost:" + port + "/webhook");
     }
     
     /**
