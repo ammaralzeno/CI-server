@@ -158,15 +158,19 @@ public class ServerTest {
     }
     
     /**
-     * Tests that POST request to /webhook endpoint returns 200 OK.
+     * Tests that POST request to /webhook with valid payload returns 200 OK.
      */
     @Test
-    public void testWebhookEndpoint() throws Exception {
+    public void testWebhookEndpointValidPayload() throws Exception {
         server = new WebhookServer(TEST_PORT);
         server.start();
         Thread.sleep(200);
         
-        String payload = "{\"test\":\"data\"}";
+        String validPayload = "{\"ref\":\"refs/heads/assessment\"," +
+                             "\"after\":\"abc123def456\"," +
+                             "\"repository\":{\"name\":\"CI-server\"," +
+                             "\"full_name\":\"user/CI-server\"," +
+                             "\"clone_url\":\"https://github.com/user/CI-server.git\"}}";
         
         URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -176,20 +180,80 @@ public class ServerTest {
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
         
-        connection.getOutputStream().write(payload.getBytes());
+        connection.getOutputStream().write(validPayload.getBytes());
         connection.getOutputStream().flush();
         
         int responseCode = connection.getResponseCode();
-        assertEquals(200, responseCode, "Webhook endpoint should return 200 OK");
+        assertEquals(200, responseCode, "Valid webhook should return 200 OK");
         
         BufferedReader reader = new BufferedReader(
             new InputStreamReader(connection.getInputStream())
         );
-        String response = reader.readLine();
+        StringBuilder response = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            response.append(line);
+        }
         reader.close();
         connection.disconnect();
         
-        assertEquals("Webhook received", response, 
-                    "Response should confirm webhook was received");
+        String responseBody = response.toString();
+        assertTrue(responseBody.contains("received"), 
+                  "Response should indicate webhook was received");
+        assertTrue(responseBody.contains("abc123def456"), 
+                  "Response should contain commit SHA");
+    }
+    
+    /**
+     * Tests that POST request with invalid JSON returns 400 Bad Request.
+     */
+    @Test
+    public void testWebhookEndpointInvalidJson() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        String invalidPayload = "{\"ref\":\"main\" \"after\":";
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+        
+        connection.getOutputStream().write(invalidPayload.getBytes());
+        connection.getOutputStream().flush();
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(400, responseCode, "Invalid JSON should return 400 Bad Request");
+        
+        connection.disconnect();
+    }
+    
+    /**
+     * Tests that POST request with missing required fields returns 400.
+     */
+    @Test
+    public void testWebhookEndpointMissingFields() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        String incompletePayload = "{\"ref\":\"refs/heads/main\"}";
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+        
+        connection.getOutputStream().write(incompletePayload.getBytes());
+        connection.getOutputStream().flush();
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(400, responseCode, 
+                    "Payload with missing fields should return 400 Bad Request");
+        
+        connection.disconnect();
     }
 }

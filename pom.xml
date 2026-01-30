@@ -30,6 +30,11 @@
             <artifactId>jetty-ee10-servlet</artifactId>
             <version>12.1.5</version>
         </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20251224</version>
+        </dependency>
     </dependencies>
 
     <build>
