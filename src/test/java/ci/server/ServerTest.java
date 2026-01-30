@@ -9,6 +9,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * Unit tests for WebhookServer and HealthCheckServlet.
@@ -29,6 +32,13 @@ public class ServerTest {
         if (server != null && server.isRunning()) {
             server.stop();
         }
+    }
+    
+    /**
+     * Reads test JSON file from resources.
+     */
+    private String readTestFile(String filename) throws IOException {
+        return Files.readString(Paths.get("src/test/resources/webhook-payloads/" + filename));
     }
     
     /**
@@ -166,16 +176,13 @@ public class ServerTest {
         server.start();
         Thread.sleep(200);
         
-        String validPayload = "{\"ref\":\"refs/heads/assessment\"," +
-                             "\"after\":\"abc123def456\"," +
-                             "\"repository\":{\"name\":\"CI-server\"," +
-                             "\"full_name\":\"user/CI-server\"," +
-                             "\"clone_url\":\"https://github.com/user/CI-server.git\"}}";
+        String validPayload = readTestFile("valid-push.json");
         
         URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-GitHub-Event", "push");
         connection.setDoOutput(true);
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
@@ -200,7 +207,7 @@ public class ServerTest {
         String responseBody = response.toString();
         assertTrue(responseBody.contains("received"), 
                   "Response should indicate webhook was received");
-        assertTrue(responseBody.contains("abc123def456"), 
+        assertTrue(responseBody.contains("a1b2c3d4e5f6789012345678901234567890abcd"), 
                   "Response should contain commit SHA");
     }
     
@@ -213,12 +220,13 @@ public class ServerTest {
         server.start();
         Thread.sleep(200);
         
-        String invalidPayload = "{\"ref\":\"main\" \"after\":";
+        String invalidPayload = readTestFile("malformed.json");
         
         URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-GitHub-Event", "push");
         connection.setDoOutput(true);
         
         connection.getOutputStream().write(invalidPayload.getBytes());
@@ -239,12 +247,13 @@ public class ServerTest {
         server.start();
         Thread.sleep(200);
         
-        String incompletePayload = "{\"ref\":\"refs/heads/main\"}";
+        String incompletePayload = readTestFile("missing-ref.json");
         
         URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-GitHub-Event", "push");
         connection.setDoOutput(true);
         
         connection.getOutputStream().write(incompletePayload.getBytes());
@@ -253,6 +262,166 @@ public class ServerTest {
         int responseCode = connection.getResponseCode();
         assertEquals(400, responseCode, 
                     "Payload with missing fields should return 400 Bad Request");
+        
+        connection.disconnect();
+    }
+    
+    /**
+     * Tests that POST request without X-GitHub-Event header returns 400.
+     */
+    @Test
+    public void testWebhookEndpointMissingEventHeader() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        String validPayload = readTestFile("valid-push.json");
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+        
+        connection.getOutputStream().write(validPayload.getBytes());
+        connection.getOutputStream().flush();
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(400, responseCode, 
+                    "Request without X-GitHub-Event header should return 400 Bad Request");
+        
+        BufferedReader reader = new BufferedReader(
+            new InputStreamReader(connection.getErrorStream())
+        );
+        String response = reader.readLine();
+        reader.close();
+        connection.disconnect();
+        
+        assertTrue(response.contains("Missing X-GitHub-Event header"), 
+                  "Response should indicate missing header");
+    }
+    
+    /**
+     * Tests that POST request with non-push event type returns 400.
+     */
+    @Test
+    public void testWebhookEndpointNonPushEvent() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        String validPayload = readTestFile("valid-push.json");
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-GitHub-Event", "pull_request");
+        connection.setDoOutput(true);
+        
+        connection.getOutputStream().write(validPayload.getBytes());
+        connection.getOutputStream().flush();
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(400, responseCode, 
+                    "Non-push event should return 400 Bad Request");
+        
+        BufferedReader reader = new BufferedReader(
+            new InputStreamReader(connection.getErrorStream())
+        );
+        String response = reader.readLine();
+        reader.close();
+        connection.disconnect();
+        
+        assertTrue(response.contains("push"), 
+                  "Response should indicate only push events are supported");
+    }
+    
+    /**
+     * Tests that POST request with X-GitHub-Event: push succeeds.
+     */
+    @Test
+    public void testWebhookEndpointWithValidEventHeader() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        String validPayload = readTestFile("valid-push.json");
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-GitHub-Event", "push");
+        connection.setDoOutput(true);
+        
+        connection.getOutputStream().write(validPayload.getBytes());
+        connection.getOutputStream().flush();
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(200, responseCode, 
+                    "Valid push event should return 200 OK");
+        
+        connection.disconnect();
+    }
+    
+    /**
+     * Tests that GET request to /webhook returns 405 Method Not Allowed.
+     */
+    @Test
+    public void testWebhookEndpointGetMethodNotAllowed() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(405, responseCode, 
+                    "GET request should return 405 Method Not Allowed");
+        
+        String allowHeader = connection.getHeaderField("Allow");
+        assertEquals("POST", allowHeader, 
+                    "Allow header should indicate POST is the only accepted method");
+        
+        BufferedReader reader = new BufferedReader(
+            new InputStreamReader(connection.getErrorStream())
+        );
+        String response = reader.readLine();
+        reader.close();
+        connection.disconnect();
+        
+        assertTrue(response.contains("GET") && response.contains("not allowed"), 
+                  "Response should indicate GET is not allowed");
+    }
+    
+    
+    /**
+     * Tests that empty X-GitHub-Event header returns 400.
+     */
+    @Test
+    public void testWebhookEndpointEmptyEventHeader() throws Exception {
+        server = new WebhookServer(TEST_PORT);
+        server.start();
+        Thread.sleep(200);
+        
+        String validPayload = readTestFile("valid-push.json");
+        
+        URL url = new URL("http://localhost:" + TEST_PORT + "/webhook");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-GitHub-Event", "");
+        connection.setDoOutput(true);
+        
+        connection.getOutputStream().write(validPayload.getBytes());
+        connection.getOutputStream().flush();
+        
+        int responseCode = connection.getResponseCode();
+        assertEquals(400, responseCode, 
+                    "Empty X-GitHub-Event header should return 400 Bad Request");
         
         connection.disconnect();
     }
