@@ -10,6 +10,11 @@ public class CiPipeline {
      */
     public BuildResult run(CiTrigger trigger) {
         try {
+            System.out.println(
+            "CI: starting pipeline for branch " + trigger.branch +
+            " @ " + trigger.commitSha
+            );
+            
             boolean compileOk = runCompile(trigger);
             if (!compileOk) {
                 return new BuildResult(BuildResult.Status.FAILURE, "Compile failed");

@@ -19,9 +19,13 @@ public class CiService {
     }
 
     /**
-     * Submits a CI trigger for execution.
+     * Triggers a CI build for the given webhook data.
      */
     public void submit(CiTrigger trigger) {
-        executor.submit(() -> pipeline.run(trigger));
+        executor.submit(() -> {
+            System.out.println("CI: starting pipeline for " + trigger.branch +
+                    " @ " + trigger.commitSha);
+            pipeline.run(trigger);
+        });
     }
 }

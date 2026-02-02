@@ -1,13 +1,18 @@
 package ci.server;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.json.JSONException;
+
+import ci.build.CiPipeline;
+import ci.build.CiService;
+import ci.build.CiTrigger;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.json.JSONException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.logging.Logger;
-import java.util.logging.Level;
 
 /**
  * Handles GitHub webhook POST requests at /webhook endpoint.
@@ -23,6 +28,8 @@ public class WebhookServlet extends HttpServlet {
     private static final Logger logger = Logger.getLogger(WebhookServlet.class.getName());
     private static final String GITHUB_EVENT_HEADER = "X-GitHub-Event";
     private static final String PUSH_EVENT = "push";
+    private final CiService ciService = new CiService(new CiPipeline());
+
     
     /**
      * Processes GitHub push webhook events.
@@ -89,7 +96,12 @@ public class WebhookServlet extends HttpServlet {
             logger.info("- Commit: " + payload.getCommitSha());
             logger.info("- Repository: " + payload.getRepositoryFullName());
             
-            // TODO: Call CiPipeline.triggerBuild(payload) - Person B task
+            CiTrigger trigger = new CiTrigger(
+                payload.getRepositoryFullName(),
+                payload.getBranchName(),
+                payload.getCommitSha()
+            );
+            ciService.submit(trigger);
             
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("application/json");
