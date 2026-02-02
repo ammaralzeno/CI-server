@@ -1,61 +1,102 @@
 package ci.build;
 
+import java.nio.file.Path;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for {@link CiPipeline}.
- * Verifies SUCCESS/FAILURE/ERROR outcomes.
- */
+import ci.notify.notify;
+import ci.storage.storage;
+
 class CiPipelineTest {
 
-    /** Compile fails -> pipeline returns FAILURE. */
+    private static final CheckoutService CHECKOUT_OK = trigger -> Path.of("dummy-workspace");
+
+    private static final notify NOOP_NOTIFY = (t, r) -> { };
+    private static final storage NOOP_STORE = (t, r) -> { };
+
+    /**
+     * Verifies that a compile failure results in FAILURE
+     * and that only the compile step is executed.
+     */
     @Test
     void compileFailure_returnsFailure() {
-        CiPipeline pipeline = new CiPipeline() {
-            @Override protected boolean runCompile(CiTrigger t) { return false; }
+        BuildExecutor executor = new BuildExecutor() {
+            @Override public StepResult compile(Path ws) { return new StepResult("compile", false, "compile failed"); }
+            @Override public StepResult test(Path ws) { return new StepResult("test", true, "ok"); }
         };
 
+        CiPipeline pipeline = new CiPipeline(CHECKOUT_OK, executor, NOOP_NOTIFY, NOOP_STORE);
         BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
 
         assertEquals(BuildResult.Status.FAILURE, res.status);
         assertTrue(res.logs.contains("Compile failed"));
+        assertEquals(1, res.steps.size());
+        assertEquals("compile", res.steps.get(0).name);
+        assertFalse(res.steps.get(0).success);
     }
 
-    /** Tests fail -> pipeline returns FAILURE. */
+    /**
+     * Verifies that a test failure after a successful compile
+     * results in FAILURE.
+     */
     @Test
     void testFailure_returnsFailure() {
-        CiPipeline pipeline = new CiPipeline() {
-            @Override protected boolean runCompile(CiTrigger t) { return true; }
-            @Override protected boolean runTests(CiTrigger t) { return false; }
+        BuildExecutor executor = new BuildExecutor() {
+            @Override public StepResult compile(Path ws) { return new StepResult("compile", true, "ok"); }
+            @Override public StepResult test(Path ws) { return new StepResult("test", false, "tests failed"); }
         };
 
+        CiPipeline pipeline = new CiPipeline(CHECKOUT_OK, executor, NOOP_NOTIFY, NOOP_STORE);
         BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
 
         assertEquals(BuildResult.Status.FAILURE, res.status);
         assertTrue(res.logs.contains("Tests failed"));
+        assertEquals(2, res.steps.size());
+        assertEquals("test", res.steps.get(1).name);
+        assertFalse(res.steps.get(1).success);
     }
 
-    /** Compile + tests succeed -> pipeline returns SUCCESS. */
+    /**
+     * Verifies that a successful compile and test
+     * results in SUCCESS.
+     */
     @Test
     void success_returnsSuccess() {
-        CiPipeline pipeline = new CiPipeline();
+        BuildExecutor executor = new BuildExecutor() {
+            @Override public StepResult compile(Path ws) { return new StepResult("compile", true, "ok"); }
+            @Override public StepResult test(Path ws) { return new StepResult("test", true, "ok"); }
+        };
+
+        CiPipeline pipeline = new CiPipeline(CHECKOUT_OK, executor, NOOP_NOTIFY, NOOP_STORE);
         BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
 
         assertEquals(BuildResult.Status.SUCCESS, res.status);
+        assertEquals(2, res.steps.size());
+        assertTrue(res.steps.get(0).success);
+        assertTrue(res.steps.get(1).success);
     }
 
-     /** Exception during execution -> pipeline returns ERROR. */
+    /**
+     * Verifies that an exception during checkout
+     * results in ERROR and no steps are executed.
+     */
     @Test
     void exception_returnsError() {
-        CiPipeline pipeline = new CiPipeline() {
-            @Override protected boolean runCompile(CiTrigger t) { throw new RuntimeException("boom"); }
+        CheckoutService checkoutThrows = trigger -> { throw new RuntimeException("boom"); };
+
+        BuildExecutor executor = new BuildExecutor() {
+            @Override public StepResult compile(Path ws) { return new StepResult("compile", true, "ok"); }
+            @Override public StepResult test(Path ws) { return new StepResult("test", true, "ok"); }
         };
 
+        CiPipeline pipeline = new CiPipeline(checkoutThrows, executor, NOOP_NOTIFY, NOOP_STORE);
         BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
 
         assertEquals(BuildResult.Status.ERROR, res.status);
         assertTrue(res.logs.contains("boom"));
+        assertEquals(0, res.steps.size());
     }
 }
