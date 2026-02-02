@@ -25,7 +25,13 @@ public class CiService {
         executor.submit(() -> {
             System.out.println("CI: starting pipeline for " + trigger.branch +
                     " @ " + trigger.commitSha);
-            pipeline.run(trigger);
+
+            BuildResult result = pipeline.run(trigger);
+
+            System.out.println("CI: finished pipeline with status " + result.status +
+                    " for " + trigger.branch + " @ " + trigger.commitSha);
+
+            System.out.println("CI: logs: " + result.logs);
         });
     }
 }
