@@ -39,9 +39,17 @@ public class DefaultBuildExecutor implements BuildExecutor {
         return new StepResult("compile", result.exitCode() == 0, result.logs());
     }
 
+    /**
+     * Calls runner with given workspace and command "mvn -B test", 
+     * returning a StepResult with logs and a Boolean representing success/failure.
+     * 
+     * @param workspace path to the directory where the command is to be run
+     * @return name "test", success/failure, test logs
+     */
     @Override
     public StepResult test(Path workspace) {
-        return null;
+        ProcessResult result = runner.run(workspace, List.of("mvn", "-B", "test"));
+        return new StepResult("test", result.exitCode() == 0, result.logs());
     }
 
 }

@@ -43,4 +43,32 @@ public class BuildExecutorTest {
         assertEquals(dummyLogs, result.logs);
     }
 
+    /**
+     * Tests test method for process returning 0.
+     * @result The test method returns a result where success is true and logs are the same as the dummy logs specified in the process result.
+     */
+    @Test
+    void testReturnsSuccessWhenExitCodeIsZero() {
+        String dummyLogs = "fake test logs";
+        ProcessRunner fakeRunner = (dir, cmd) -> new ProcessResult(0, dummyLogs);
+        BuildExecutor exec = new DefaultBuildExecutor(fakeRunner);
+        StepResult result = exec.test(Path.of("/tmp"));
+        assertTrue(result.success);
+        assertEquals(dummyLogs, result.logs);
+    }
+
+    /**
+     * Tests compile method for process returning 1.
+     * @result The compile method returns a result where success is false and logs are the same as the dummy logs specified in the process result.
+     */
+    @Test
+    void testReturnsFailureWhenExitCodeIsNonZero() {
+        String dummyLogs = "fake test logs";
+        ProcessRunner fakeRunner = (dir, cmd) -> new ProcessResult(1, dummyLogs);
+        BuildExecutor exec = new DefaultBuildExecutor(fakeRunner);
+        StepResult result = exec.test(Path.of("/tmp"));
+        assertFalse(result.success);
+        assertEquals(dummyLogs, result.logs);
+    }
+    
 }
