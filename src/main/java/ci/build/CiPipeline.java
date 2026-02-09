@@ -21,7 +21,7 @@ public class CiPipeline {
      */
     public CiPipeline() {
         this(
-            new DummyCheckoutService(),
+            new DefaultCheckoutService(),
             new DefaultBuildExecutor(),
             new ci.notify.NoOpNotifier(),
             new ci.storage.NoOpStore()
