@@ -69,10 +69,16 @@ public final class GitHubStatusNotifier implements notify {
         String description = mapDescription(result.status);
 
         try {
-            client.createStatus(repoFullName, sha, state, context, description, publicBuildUrl);
+            int code = client.createStatus(repoFullName, sha, state, context, description, publicBuildUrl);
+
+            if (code < 200 || code >= 300) {
+                System.err.println("[notify] GitHub status rejected: HTTP " + code
+                        + " repo=" + repoFullName + " sha=" + sha);
+            }
         } catch (IOException | InterruptedException e) {
-            // commit 3 will handle "gracefully" for issue #21; for now we throw.
-            throw new RuntimeException("Failed to notify GitHub commit status", e);
+            System.err.println("[notify] GitHub status failed: " + e.getMessage()
+                    + " repo=" + repoFullName + " sha=" + sha);
+
         }
     }
 

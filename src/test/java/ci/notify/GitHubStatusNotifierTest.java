@@ -95,4 +95,28 @@ public final class GitHubStatusNotifierTest {
         JSONObject body = new JSONObject(capturedBody.get());
         assertEquals("error", body.getString("state"));
     }
+
+    @Test
+    void notifyFromPayload_doesNotThrowWhenHttpFails() {
+        HttpSender throwing = (url, headers, jsonBody) -> {
+            throw new java.io.IOException("network down");
+        };
+
+        GitHubStatusClient client = new GitHubStatusClient(throwing, "https://api.github.com", "TOKEN");
+        GitHubStatusNotifier notifier = new GitHubStatusNotifier(client, "kth-ci/build", "");
+
+        WebhookPayload payload = new WebhookPayload(
+                "assessment",
+                "abc123",
+                "CI-server",
+                "octocat/CI-server",
+                "https://github.com/octocat/CI-server.git"
+        );
+
+        BuildResult res = new BuildResult(BuildResult.Status.SUCCESS, "ok", java.util.List.of());
+
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
+                notifier.notifyFromPayload(payload, res)
+        );
+    }
 }
