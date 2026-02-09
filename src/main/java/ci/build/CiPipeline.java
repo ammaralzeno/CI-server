@@ -16,14 +16,13 @@ public class CiPipeline {
      * Default constructor used by the servlet wiring.
      * Uses temporary stub implementations until real ones are provided.
      *
-     * TODO(Person C): Replace DummyCheckoutService/DummyBuildExecutor with real implementations.
      * TODO(Person D): Replace NoOpNotifier with real notifier.
      * TODO(Person E): Replace NoOpStore with real persistent storage.
      */
     public CiPipeline() {
         this(
             new DummyCheckoutService(),
-            new DummyBuildExecutor(),
+            new DefaultBuildExecutor(),
             new ci.notify.NoOpNotifier(),
             new ci.storage.NoOpStore()
         );
