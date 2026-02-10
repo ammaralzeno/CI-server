@@ -33,6 +33,18 @@ public class BuildResult {
     }
 
     /**
+     * Constructor for loading builds from persistence.
+     */
+    public BuildResult(String buildId, String date, Status status, String logs, List<StepResult> steps) {
+        this.buildId = buildId;
+        this.date = date;
+        this.status = status;
+        this.logs = logs;
+        this.steps = steps;
+    }
+
+
+    /**
      * Checks for successful build.
      * @return true only if status is SUCCESS
      */
