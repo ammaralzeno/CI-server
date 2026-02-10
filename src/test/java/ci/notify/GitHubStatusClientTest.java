@@ -10,8 +10,19 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link GitHubStatusClient}.
+ *
+ * <p>These tests verify that the REST client builds the correct GitHub API endpoint,
+ * sets required headers (notably Authorization), and produces a valid JSON payload for
+ * the commit status API. Network calls are replaced by fake {@link HttpSender} instances.</p>
+ */
 public final class GitHubStatusClientTest {
 
+    /**
+     * Verifies that {@link GitHubStatusClient#createStatus(String, String, String, String, String, String)}
+     * constructs the expected URL, sends the required headers, and includes mandatory and optional JSON fields.
+     */
     @Test
     void createStatus_buildsCorrectUrlHeadersAndJson() throws Exception {
         AtomicReference<String> capturedUrl = new AtomicReference<>();
@@ -51,6 +62,9 @@ public final class GitHubStatusClientTest {
         assertEquals("https://example.ngrok.io/builds/1", body.getString("target_url"));
     }
 
+    /**
+     * Verifies that the description field is truncated to GitHub's expected max length (140 characters).
+     */
     @Test
     void createStatus_truncatesDescriptionToMax140() throws Exception {
         AtomicReference<String> capturedBody = new AtomicReference<>();
@@ -77,6 +91,10 @@ public final class GitHubStatusClientTest {
         assertTrue(body.getString("description").length() <= 140);
     }
 
+    /**
+     * Verifies that the REST client sets the Authorization header and targets the correct
+     * GitHub "statuses" endpoint for the given repository and commit SHA.
+     */
     @Test
     void createStatus_setsAuthHeaderAndCorrectEndpoint() throws Exception {
         RecordingHttpSender rec = new RecordingHttpSender(201);
@@ -84,14 +102,18 @@ public final class GitHubStatusClientTest {
 
         client.createStatus("octocat/CI-server", "abc123", "success", "kth-ci/build", "ok", null);
 
-        org.junit.jupiter.api.Assertions.assertEquals(
+        assertEquals(
                 "https://api.github.com/repos/octocat/CI-server/statuses/abc123",
                 rec.url.get()
         );
-        org.junit.jupiter.api.Assertions.assertEquals("Bearer TOKEN123", rec.headers.get().get("Authorization"));
-        org.junit.jupiter.api.Assertions.assertEquals("application/vnd.github+json", rec.headers.get().get("Accept"));
+        assertEquals("Bearer TOKEN123", rec.headers.get().get("Authorization"));
+        assertEquals("application/vnd.github+json", rec.headers.get().get("Accept"));
     }
 
+    /**
+     * Verifies that optional fields are not included in the JSON payload when they are blank,
+     * avoiding sending empty strings to GitHub.
+     */
     @Test
     void createStatus_omitsOptionalFieldsWhenBlank() throws Exception {
         RecordingHttpSender rec = new RecordingHttpSender(201);
@@ -99,11 +121,10 @@ public final class GitHubStatusClientTest {
 
         client.createStatus("octocat/CI-server", "abc123", "success", "kth-ci/build", "  ", " ");
 
-        org.json.JSONObject body = new org.json.JSONObject(rec.body.get());
-        org.junit.jupiter.api.Assertions.assertEquals("success", body.getString("state"));
-        org.junit.jupiter.api.Assertions.assertEquals("kth-ci/build", body.getString("context"));
-        org.junit.jupiter.api.Assertions.assertFalse(body.has("description"));
-        org.junit.jupiter.api.Assertions.assertFalse(body.has("target_url"));
+        JSONObject body = new JSONObject(rec.body.get());
+        assertEquals("success", body.getString("state"));
+        assertEquals("kth-ci/build", body.getString("context"));
+        assertFalse(body.has("description"));
+        assertFalse(body.has("target_url"));
     }
-
 }

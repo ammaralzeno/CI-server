@@ -10,12 +10,17 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Low-level GitHub REST client for commit statuses.
+ * Low-level GitHub REST client for creating commit statuses.
  *
- * Endpoint:
+ * <p>This class wraps the GitHub REST endpoint used to attach build results to a specific commit,
+ * which then appears on commits and pull requests as a status check.</p>
+ *
+ * <p>Endpoint used:
+ * <pre>
  * POST {apiBase}/repos/{owner}/{repo}/statuses/{sha}
+ * </pre>
  *
- * Docs: "Create a commit status" (GitHub REST API).
+ * <p>Authentication is performed via a token sent in the {@code Authorization: Bearer ...} header.</p>
  */
 public final class GitHubStatusClient {
 
@@ -23,6 +28,15 @@ public final class GitHubStatusClient {
     private final String apiBase;
     private final String token;
 
+    /**
+     * Creates a new GitHubStatusClient.
+     *
+     * @param http HTTP sender used to execute requests (injectable for unit testing)
+     * @param apiBase GitHub API base URL (e.g. {@code https://api.github.com})
+     * @param token GitHub token used for authentication
+     * @throws NullPointerException if {@code http} is null
+     * @throws IllegalArgumentException if {@code apiBase} or {@code token} is blank
+     */
     public GitHubStatusClient(HttpSender http, String apiBase, String token) {
         this.http = Objects.requireNonNull(http, "http");
         this.apiBase = requireNonBlank(apiBase, "apiBase");
@@ -30,15 +44,21 @@ public final class GitHubStatusClient {
     }
 
     /**
-     * Creates a commit status on GitHub.
+     * Creates a commit status on GitHub for the given repository and commit SHA.
      *
-     * @param repositoryFullName "owner/repo"
-     * @param sha commit SHA
-     * @param state "pending", "success", "failure", or "error"
-     * @param context status context (e.g. "kth-ci/build")
-     * @param description short text (optional)
-     * @param targetUrl URL to logs/build page (optional)
-     * @return HTTP status code returned by GitHub
+     * <p>Typical usage is to call this after running the CI pipeline, mapping the build result to
+     * one of GitHub's supported status states: {@code pending}, {@code success}, {@code failure}, {@code error}.</p>
+     *
+     * @param repositoryFullName repository in {@code owner/repo} format
+     * @param sha commit SHA to attach the status to
+     * @param state GitHub status state: {@code pending}, {@code success}, {@code failure}, or {@code error}
+     * @param context status context label shown on GitHub (e.g. {@code kth-ci/build})
+     * @param description short human-readable text (optional; truncated to 140 chars)
+     * @param targetUrl optional URL for "Details" (e.g. link to build logs/history)
+     * @return HTTP status code returned by GitHub (typically 201 on success)
+     * @throws IOException if the HTTP request fails at transport level
+     * @throws InterruptedException if the calling thread is interrupted during the request
+     * @throws IllegalArgumentException if required parameters are blank
      */
     public int createStatus(
             String repositoryFullName,

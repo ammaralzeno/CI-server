@@ -12,8 +12,19 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link GitHubStatusNotifier}.
+ *
+ * <p>These tests use fake {@link HttpSender} implementations (or {@link RecordingHttpSender})
+ * to avoid real network calls. They verify that {@link GitHubStatusNotifier#notifyFromPayload(WebhookPayload, BuildResult)}
+ * maps {@link BuildResult.Status} to the correct GitHub commit status state and produces the expected JSON payload.</p>
+ */
 public final class GitHubStatusNotifierTest {
 
+    /**
+     * Verifies that a successful CI result is mapped to GitHub status state {@code "success"}
+     * and that the configured status context is included.
+     */
     @Test
     void notifyFromPayload_mapsSuccessToGitHubSuccess() {
         AtomicReference<String> capturedBody = new AtomicReference<>();
@@ -42,6 +53,9 @@ public final class GitHubStatusNotifierTest {
         assertEquals("kth-ci/build", body.getString("context"));
     }
 
+    /**
+     * Verifies that a failing CI result is mapped to GitHub status state {@code "failure"}.
+     */
     @Test
     void notifyFromPayload_mapsFailureToGitHubFailure() {
         AtomicReference<String> capturedBody = new AtomicReference<>();
@@ -69,6 +83,9 @@ public final class GitHubStatusNotifierTest {
         assertEquals("failure", body.getString("state"));
     }
 
+    /**
+     * Verifies that an internal CI error is mapped to GitHub status state {@code "error"}.
+     */
     @Test
     void notifyFromPayload_mapsErrorToGitHubError() {
         AtomicReference<String> capturedBody = new AtomicReference<>();
@@ -96,6 +113,10 @@ public final class GitHubStatusNotifierTest {
         assertEquals("error", body.getString("state"));
     }
 
+    /**
+     * Verifies that notification failures (e.g., network errors) do not throw and therefore
+     * do not fail the CI pipeline.
+     */
     @Test
     void notifyFromPayload_doesNotThrowWhenHttpFails() {
         HttpSender throwing = (url, headers, jsonBody) -> {
@@ -113,13 +134,15 @@ public final class GitHubStatusNotifierTest {
                 "https://github.com/octocat/CI-server.git"
         );
 
-        BuildResult res = new BuildResult(BuildResult.Status.SUCCESS, "ok", java.util.List.of());
+        BuildResult res = new BuildResult(BuildResult.Status.SUCCESS, "ok", List.of());
 
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
-                notifier.notifyFromPayload(payload, res)
-        );
+        assertDoesNotThrow(() -> notifier.notifyFromPayload(payload, res));
     }
 
+    /**
+     * Verifies that the {@code target_url} field is included in the GitHub status payload
+     * when a public build URL is configured.
+     */
     @Test
     void notifyFromPayload_includesTargetUrlWhenProvided() {
         RecordingHttpSender rec = new RecordingHttpSender(201);
@@ -134,11 +157,10 @@ public final class GitHubStatusNotifierTest {
                 "https://github.com/octocat/CI-server.git"
         );
 
-        BuildResult res = new BuildResult(BuildResult.Status.SUCCESS, "ok", java.util.List.of());
+        BuildResult res = new BuildResult(BuildResult.Status.SUCCESS, "ok", List.of());
         notifier.notifyFromPayload(payload, res);
 
-        org.json.JSONObject body = new org.json.JSONObject(rec.body.get());
-        org.junit.jupiter.api.Assertions.assertEquals("https://x.ngrok.io/builds/7", body.getString("target_url"));
+        JSONObject body = new JSONObject(rec.body.get());
+        assertEquals("https://x.ngrok.io/builds/7", body.getString("target_url"));
     }
-
 }
