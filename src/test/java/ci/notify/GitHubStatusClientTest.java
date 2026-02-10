@@ -76,4 +76,34 @@ public final class GitHubStatusClientTest {
         JSONObject body = new JSONObject(capturedBody.get());
         assertTrue(body.getString("description").length() <= 140);
     }
+
+    @Test
+    void createStatus_setsAuthHeaderAndCorrectEndpoint() throws Exception {
+        RecordingHttpSender rec = new RecordingHttpSender(201);
+        GitHubStatusClient client = new GitHubStatusClient(rec, "https://api.github.com", "TOKEN123");
+
+        client.createStatus("octocat/CI-server", "abc123", "success", "kth-ci/build", "ok", null);
+
+        org.junit.jupiter.api.Assertions.assertEquals(
+                "https://api.github.com/repos/octocat/CI-server/statuses/abc123",
+                rec.url.get()
+        );
+        org.junit.jupiter.api.Assertions.assertEquals("Bearer TOKEN123", rec.headers.get().get("Authorization"));
+        org.junit.jupiter.api.Assertions.assertEquals("application/vnd.github+json", rec.headers.get().get("Accept"));
+    }
+
+    @Test
+    void createStatus_omitsOptionalFieldsWhenBlank() throws Exception {
+        RecordingHttpSender rec = new RecordingHttpSender(201);
+        GitHubStatusClient client = new GitHubStatusClient(rec, "https://api.github.com", "TOKEN123");
+
+        client.createStatus("octocat/CI-server", "abc123", "success", "kth-ci/build", "  ", " ");
+
+        org.json.JSONObject body = new org.json.JSONObject(rec.body.get());
+        org.junit.jupiter.api.Assertions.assertEquals("success", body.getString("state"));
+        org.junit.jupiter.api.Assertions.assertEquals("kth-ci/build", body.getString("context"));
+        org.junit.jupiter.api.Assertions.assertFalse(body.has("description"));
+        org.junit.jupiter.api.Assertions.assertFalse(body.has("target_url"));
+    }
+
 }

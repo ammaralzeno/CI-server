@@ -119,4 +119,26 @@ public final class GitHubStatusNotifierTest {
                 notifier.notifyFromPayload(payload, res)
         );
     }
+
+    @Test
+    void notifyFromPayload_includesTargetUrlWhenProvided() {
+        RecordingHttpSender rec = new RecordingHttpSender(201);
+        GitHubStatusClient client = new GitHubStatusClient(rec, "https://api.github.com", "TOKEN");
+        GitHubStatusNotifier notifier = new GitHubStatusNotifier(client, "kth-ci/build", "https://x.ngrok.io/builds/7");
+
+        WebhookPayload payload = new WebhookPayload(
+                "assessment",
+                "abc123",
+                "CI-server",
+                "octocat/CI-server",
+                "https://github.com/octocat/CI-server.git"
+        );
+
+        BuildResult res = new BuildResult(BuildResult.Status.SUCCESS, "ok", java.util.List.of());
+        notifier.notifyFromPayload(payload, res);
+
+        org.json.JSONObject body = new org.json.JSONObject(rec.body.get());
+        org.junit.jupiter.api.Assertions.assertEquals("https://x.ngrok.io/builds/7", body.getString("target_url"));
+    }
+
 }
