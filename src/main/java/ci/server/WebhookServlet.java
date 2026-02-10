@@ -94,10 +94,10 @@ public class WebhookServlet extends HttpServlet {
             logger.info("Successfully parsed webhook: " + payload);
             logger.info("- Branch: " + payload.getBranchName());
             logger.info("- Commit: " + payload.getCommitSha());
-            logger.info("- Repository: " + payload.getRepositoryFullName());
+            logger.info("- Repository: " + payload.getCloneUrl());
             
             CiTrigger trigger = new CiTrigger(
-                payload.getRepositoryFullName(),
+                payload.getCloneUrl(),
                 payload.getBranchName(),
                 payload.getCommitSha()
             );
