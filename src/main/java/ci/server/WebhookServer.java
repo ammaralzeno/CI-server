@@ -1,5 +1,7 @@
 package ci.server;
 
+import ci.storage.BuildStore;
+import ci.storage.Storage;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -66,11 +68,15 @@ public class WebhookServer {
         
         context.addServlet(new ServletHolder(new HealthCheckServlet()), "/");
         context.addServlet(new ServletHolder(new WebhookServlet()), "/webhook");
-        
+
+        Storage buildStorage = new BuildStore();
+        context.addServlet(new ServletHolder(new BuildHistoryServlet(buildStorage)), "/builds/*");
+
         server.start();
         System.out.println("CI server started on port " + port);
         System.out.println("Health check: http://localhost:" + port + "/");
         System.out.println("Webhook endpoint: http://localhost:" + port + "/webhook");
+        System.out.println("Build history: http://localhost:" + port + "/builds");
     }
     
     /**
