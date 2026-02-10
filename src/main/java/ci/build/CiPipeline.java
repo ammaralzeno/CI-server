@@ -6,6 +6,7 @@ import java.util.List;
 
 import ci.notify.notify;
 import ci.storage.storage;
+import ci.notify.NotifierFactory;
 
 /**
  * Orchestrates the CI pipeline.
@@ -22,10 +23,10 @@ public class CiPipeline {
      */
     public CiPipeline() {
         this(
-            new DummyCheckoutService(),
-            new DummyBuildExecutor(),
-            new ci.notify.NoOpNotifier(),
-            new ci.storage.NoOpStore()
+                new DummyCheckoutService(),
+                new DummyBuildExecutor(),
+                new NotifierFactory().create(),
+                new ci.storage.NoOpStore()
         );
     }
 
