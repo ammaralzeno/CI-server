@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import ci.build.BuildResult;
 import ci.build.CiTrigger;
 import ci.build.BuildResult.Status;
+import ci.build.StepResult;
 
 public class StorageTest {
 
@@ -30,6 +31,7 @@ public class StorageTest {
         assertEquals(original.date, loaded.date);
         assertEquals(original.status, loaded.status);
         assertEquals(original.logs, loaded.logs);
+        assertEquals(original.steps, loaded.steps);
 
         store.remove("12345");
     }
@@ -44,11 +46,19 @@ public class StorageTest {
         List<BuildResult> builds = store.loadAll();
         int startSize = builds.size();
 
-        BuildResult build1 = new BuildResult("1", LocalDate.now().toString(), Status.SUCCESS, "OK", new ArrayList<>());
-        store.save(new CiTrigger("repo", "assessment", "abc123"), build1);
+        List<StepResult> steps = new ArrayList<>();
+        StepResult step = new StepResult("abc", true, "OK");
 
-        BuildResult build2 = new BuildResult("2", LocalDate.now().toString(), Status.SUCCESS, "OK", new ArrayList<>());
-        store.save(new CiTrigger("repo", "assessment", "abc123"), build2);
+        steps.add(step);
+        steps.add(step);
+        steps.add(step);
+
+        CiTrigger trigger = new CiTrigger("repo", "assessment", "abc123");
+        BuildResult build1 = new BuildResult("1", LocalDate.now().toString(), Status.SUCCESS, "OK", steps);
+        BuildResult build2 = new BuildResult("2", LocalDate.now().toString(), Status.SUCCESS, "OK", steps);
+        
+        store.save(trigger, build1);
+        store.save(trigger, build2);
 
         builds = store.loadAll();
         assertEquals(2, builds.size() - startSize);
@@ -67,9 +77,10 @@ public class StorageTest {
         List<BuildResult> builds = store.loadAll();
         int startSize = builds.size();
 
+        List<StepResult> steps = new ArrayList<>();
         CiTrigger trigger = new CiTrigger("repo", "assessment", "abc123");
-
-        BuildResult build = new BuildResult("1", LocalDate.now().toString(), Status.SUCCESS, "OK", new ArrayList<>());
+        BuildResult build = new BuildResult("1", LocalDate.now().toString(), Status.SUCCESS, "OK", steps);
+        
         store.save(trigger, build);
         store.save(trigger, build);
 
@@ -78,4 +89,5 @@ public class StorageTest {
 
         store.remove("1");
     }
+
 }
