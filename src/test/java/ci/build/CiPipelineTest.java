@@ -8,14 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import ci.notify.notify;
-import ci.storage.storage;
+import ci.storage.NoOpStore;
+import ci.storage.Storage;
 
 class CiPipelineTest {
 
     private static final CheckoutService CHECKOUT_OK = trigger -> Path.of("dummy-workspace");
 
     private static final notify NOOP_NOTIFY = (t, r) -> { };
-    private static final storage NOOP_STORE = (t, r) -> { };
+    private static final Storage NOOP_STORE = new NoOpStore();
 
     /**
      * Verifies that a compile failure results in FAILURE
