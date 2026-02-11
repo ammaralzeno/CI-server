@@ -32,6 +32,12 @@ public class CiService {
                     " for " + trigger.branch + " @ " + trigger.commitSha);
 
             System.out.println("CI: logs: " + result.logs);
+
+            for(var step : result.steps) {
+                System.out.println("Step: " + step.name);
+                System.out.println("Logs: " + step.logs);
+                System.out.println("Success: " + step.success + "\n");
+            }
         });
     }
 }
