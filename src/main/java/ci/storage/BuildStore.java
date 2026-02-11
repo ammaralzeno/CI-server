@@ -13,7 +13,7 @@ import ci.build.BuildResult;
 import ci.build.CiTrigger;
 import ci.build.StepResult;
 
-public class BuildStore implements storage {
+public class BuildStore implements Storage {
 
     private final String url = "jdbc:sqlite:builds.db";
 

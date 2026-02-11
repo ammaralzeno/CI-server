@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ci.notify.notify;
-import ci.storage.storage;
 import ci.notify.NotifierFactory;
+import ci.storage.Storage;
 
 /**
  * Orchestrates the CI pipeline.
@@ -29,12 +29,12 @@ public class CiPipeline {
     private final CheckoutService checkout;
     private final BuildExecutor executor;
     private final notify notifier;
-    private final storage store;
+    private final Storage store;
 
     public CiPipeline(CheckoutService checkout,
                       BuildExecutor executor,
                       notify notifier,
-                      storage store) {
+                      Storage store) {
         this.checkout = checkout;
         this.executor = executor;
         this.notifier = notifier;
