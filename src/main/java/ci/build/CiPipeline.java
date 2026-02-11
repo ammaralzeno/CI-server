@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ci.notify.notify;
+import ci.notify.NotifierFactory;
 import ci.storage.Storage;
 
 /**
@@ -15,16 +16,14 @@ public class CiPipeline {
     /**
      * Default constructor used by the servlet wiring.
      * Uses temporary stub implementations until real ones are provided.
-     *
-     * TODO(Person D): Replace NoOpNotifier with real notifier.
      */
     public CiPipeline() {
-        this(
-            new DefaultCheckoutService(),
-            new DefaultBuildExecutor(),
-            new ci.notify.NoOpNotifier(),
-            new ci.storage.BuildStore()
-        );
+      this(
+          new DefaultCheckoutService(),
+          new DefaultBuildExecutor(),
+          new NotifierFactory().create(),
+          new ci.storage.BuildStore()
+      );
     }
 
     private final CheckoutService checkout;
