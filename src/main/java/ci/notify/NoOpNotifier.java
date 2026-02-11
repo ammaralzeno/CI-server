@@ -4,13 +4,14 @@ import ci.build.BuildResult;
 import ci.build.CiTrigger;
 
 /**
- * No-op notifier stub.
+ * No-op notifier.
  *
- * TODO(Person D): Replace with real notifier.
+ * <p>Used as a fallback when notifications are disabled or not configured
+ * (e.g., missing {@code GITHUB_TOKEN}).</p>
  */
 public class NoOpNotifier implements notify {
     @Override
     public void notify(CiTrigger trigger, BuildResult result) {
-        // do nothing
+        // intentionally empty
     }
 }
