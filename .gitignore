@@ -44,3 +44,6 @@ $RECYCLE.BIN/
 *.tmp
 *.swp
 *.swo
+
+# Env (GITHUB TOKEN for notifications)
+.env
