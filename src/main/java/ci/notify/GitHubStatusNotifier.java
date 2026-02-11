@@ -155,17 +155,27 @@ public final class GitHubStatusNotifier implements notify {
      *
      * @param trigger CI trigger
      * @return webhook payload
-     * @throws IllegalStateException if no payload accessor method is available
+     * @throws IllegalStateException if no payload accessor method is available or if payload is null
      */
     private static WebhookPayload extractPayload(CiTrigger trigger) {
         try {
             Object o = trigger.getClass().getMethod("getPayload").invoke(trigger);
+            if (o == null) {
+                throw new IllegalStateException("CiTrigger.getPayload() returned null - webhook payload required for GitHub notification");
+            }
             return (WebhookPayload) o;
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (Exception ignored) { }
 
         try {
             Object o = trigger.getClass().getMethod("payload").invoke(trigger);
+            if (o == null) {
+                throw new IllegalStateException("CiTrigger.payload() returned null - webhook payload required for GitHub notification");
+            }
             return (WebhookPayload) o;
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (Exception ignored) { }
 
         throw new IllegalStateException("CiTrigger does not expose WebhookPayload (expected getPayload() or payload())");

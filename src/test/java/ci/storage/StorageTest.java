@@ -23,7 +23,7 @@ public class StorageTest {
         BuildStore store = new BuildStore();
 
         BuildResult original = new BuildResult("12345", LocalDate.now().toString(), Status.SUCCESS, "OK", new ArrayList<>());
-        store.save(new CiTrigger("repo", "assessment", "abc123"), original);
+        store.save(new CiTrigger("repo", "assessment", "abc123", null), original);
 
         BuildResult loaded = store.load("12345");
 
@@ -53,7 +53,7 @@ public class StorageTest {
         steps.add(step);
         steps.add(step);
 
-        CiTrigger trigger = new CiTrigger("repo", "assessment", "abc123");
+        CiTrigger trigger = new CiTrigger("repo", "assessment", "abc123", null);
         BuildResult build1 = new BuildResult("1", LocalDate.now().toString(), Status.SUCCESS, "OK", steps);
         BuildResult build2 = new BuildResult("2", LocalDate.now().toString(), Status.SUCCESS, "OK", steps);
         
@@ -78,7 +78,7 @@ public class StorageTest {
         int startSize = builds.size();
 
         List<StepResult> steps = new ArrayList<>();
-        CiTrigger trigger = new CiTrigger("repo", "assessment", "abc123");
+        CiTrigger trigger = new CiTrigger("repo", "assessment", "abc123", null);
         BuildResult build = new BuildResult("1", LocalDate.now().toString(), Status.SUCCESS, "OK", steps);
         
         store.save(trigger, build);

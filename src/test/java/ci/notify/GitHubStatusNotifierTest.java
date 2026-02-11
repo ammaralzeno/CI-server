@@ -1,6 +1,7 @@
 package ci.notify;
 
 import ci.build.BuildResult;
+import ci.build.CiTrigger;
 import ci.notify.http.HttpResponseData;
 import ci.notify.http.HttpSender;
 import ci.server.WebhookPayload;
@@ -162,5 +163,57 @@ public final class GitHubStatusNotifierTest {
 
         JSONObject body = new JSONObject(rec.body.get());
         assertEquals("https://x.ngrok.io/builds/7", body.getString("target_url"));
+    }
+
+    /**
+     * Verifies that notify() can extract WebhookPayload from CiTrigger and send notification.
+     * This tests the complete integration path from CiTrigger to GitHub API.
+     */
+    @Test
+    void notify_withCiTrigger_extractsPayloadAndNotifies() {
+        RecordingHttpSender rec = new RecordingHttpSender(201);
+        GitHubStatusClient client = new GitHubStatusClient(rec, "https://api.github.com", "TOKEN");
+        GitHubStatusNotifier notifier = new GitHubStatusNotifier(client, "kth-ci/test", "");
+
+        WebhookPayload payload = new WebhookPayload(
+                "main",
+                "def456",
+                "my-repo",
+                "user/my-repo",
+                "https://github.com/user/my-repo.git"
+        );
+        
+        CiTrigger trigger = new CiTrigger(
+                "https://github.com/user/my-repo.git",
+                "main",
+                "def456",
+                payload
+        );
+
+        BuildResult res = new BuildResult(BuildResult.Status.FAILURE, "build failed", List.of());
+        notifier.notify(trigger, res);
+
+        // Verify the notification was sent
+        assertNotNull(rec.url.get());
+        assertTrue(rec.url.get().contains("/repos/user/my-repo/statuses/def456"));
+        
+        JSONObject body = new JSONObject(rec.body.get());
+        assertEquals("failure", body.getString("state"));
+        assertEquals("kth-ci/test", body.getString("context"));
+    }
+
+    /**
+     * Verifies that notify() throws IllegalStateException when CiTrigger has no payload.
+     */
+    @Test
+    void notify_withoutPayload_throwsIllegalStateException() {
+        RecordingHttpSender rec = new RecordingHttpSender(201);
+        GitHubStatusClient client = new GitHubStatusClient(rec, "https://api.github.com", "TOKEN");
+        GitHubStatusNotifier notifier = new GitHubStatusNotifier(client, "kth-ci/build", "");
+
+        CiTrigger trigger = new CiTrigger("repo", "branch", "sha", null);
+        BuildResult res = new BuildResult(BuildResult.Status.SUCCESS, "ok", List.of());
+
+        assertThrows(IllegalStateException.class, () -> notifier.notify(trigger, res));
     }
 }
