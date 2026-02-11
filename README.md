@@ -191,9 +191,10 @@ Test webhook payloads are located in `src/test/resources/webhook-payloads/`:
 The test execution is also unit tested by making sure both the compile method and test method return the correct result and logs depending on the process exit code.
 
 ### Notification
-**TODO** how notification has been implemented and unit-tested
 
-The unit tests for the notification logic verify that the factory works both in the presence and absence of a token. They also ensure that CI results (regardless of outcome) are mapped to the correct GitHub commit statuses and that the payloads are produced as expected. In addition, in the case of notification failures, the unit tests make sure that the server doesn't crash. On the client side, they test **TODO**.
+We notify CI results by posting **GitHub commit statuses** via the REST API. `NotifierFactory` uses `GitHubStatusNotifier` when `GITHUB_TOKEN` is set, otherwise it falls back to `NoOpNotifier`. Status mapping: `SUCCESS→success`, `FAILURE→failure`, `ERROR→error`. Notification errors are logged and do **not** crash the pipeline.
+
+Unit tests check: factory selection (token vs no token), correct status mapping + JSON payload, correct REST endpoint and headers, optional `target_url` handling, description truncation, and that network failures don’t throw.
 
 ## Build list URL
 The build list of our server is available here:
