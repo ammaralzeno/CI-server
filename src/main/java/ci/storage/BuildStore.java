@@ -105,7 +105,6 @@ public class BuildStore implements Storage {
      * Load a build from buildId.
      * @param buildId of build to load
      * @return searched build
-     * @throws SQLException
      */
     public BuildResult load(String buildId) {
         BuildResult build;
