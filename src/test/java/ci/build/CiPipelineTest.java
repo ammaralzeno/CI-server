@@ -30,7 +30,7 @@ class CiPipelineTest {
         };
 
         CiPipeline pipeline = new CiPipeline(CHECKOUT_OK, executor, NOOP_NOTIFY, NOOP_STORE);
-        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
+        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123", null));
 
         assertEquals(BuildResult.Status.FAILURE, res.status);
         assertTrue(res.logs.contains("Compile failed"));
@@ -51,7 +51,7 @@ class CiPipelineTest {
         };
 
         CiPipeline pipeline = new CiPipeline(CHECKOUT_OK, executor, NOOP_NOTIFY, NOOP_STORE);
-        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
+        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123", null));
 
         assertEquals(BuildResult.Status.FAILURE, res.status);
         assertTrue(res.logs.contains("Tests failed"));
@@ -72,7 +72,7 @@ class CiPipelineTest {
         };
 
         CiPipeline pipeline = new CiPipeline(CHECKOUT_OK, executor, NOOP_NOTIFY, NOOP_STORE);
-        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
+        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123", null));
 
         assertEquals(BuildResult.Status.SUCCESS, res.status);
         assertEquals(2, res.steps.size());
@@ -94,7 +94,7 @@ class CiPipelineTest {
         };
 
         CiPipeline pipeline = new CiPipeline(checkoutThrows, executor, NOOP_NOTIFY, NOOP_STORE);
-        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123"));
+        BuildResult res = pipeline.run(new CiTrigger("repo", "assessment", "abc123", null));
 
         assertEquals(BuildResult.Status.ERROR, res.status);
         assertTrue(res.logs.contains("boom"));

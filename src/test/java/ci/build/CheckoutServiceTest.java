@@ -17,7 +17,7 @@ public class CheckoutServiceTest {
      */
     @Test
     void returnsBranchWhenShaIsNull() {
-        var trigger = new CiTrigger("url", "branch", null);
+        var trigger = new CiTrigger("url", "branch", null, null);
         var service = new DefaultCheckoutService();
         var target = service.resolveCheckoutTarget(trigger);
         assertEquals(target, "refs/heads/" + trigger.branch);
@@ -29,7 +29,7 @@ public class CheckoutServiceTest {
      */
     @Test
     void returnsBranchWhenShaIsBlank() {
-        var trigger = new CiTrigger("url", "branch", "");
+        var trigger = new CiTrigger("url", "branch", "", null);
         var service = new DefaultCheckoutService();
         var target = service.resolveCheckoutTarget(trigger);
         assertEquals(target, "refs/heads/" + trigger.branch);
@@ -41,7 +41,7 @@ public class CheckoutServiceTest {
      */
     @Test
     void returnsShaWhenNotNullAndNotBlank() {
-        var trigger = new CiTrigger("url", "branch", "sha");
+        var trigger = new CiTrigger("url", "branch", "sha", null);
         var service = new DefaultCheckoutService();
         var target = service.resolveCheckoutTarget(trigger);
         assertEquals(target, trigger.commitSha);

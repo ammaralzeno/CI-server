@@ -99,7 +99,8 @@ public class WebhookServlet extends HttpServlet {
             CiTrigger trigger = new CiTrigger(
                 payload.getCloneUrl(),
                 payload.getBranchName(),
-                payload.getCommitSha()
+                payload.getCommitSha(),
+                payload
             );
             ciService.submit(trigger);
             
