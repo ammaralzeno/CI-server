@@ -26,10 +26,8 @@ public class DefaultCheckoutService implements CheckoutService {
      *                                      or closing of repo fails
      * @exception GitAPIException           If an error occurs relating to JGit
      * @exception InvalidRemoteException    If remote repo is invalid or not found
-     * @exception TransportException        If an error occurs connecting to remote repo
      * @exception RefNotFoundException      If the branch or commit SHA does not exist
      * @exception InvalidRefNameException   If the commit SHA is invalid
-     * @exception CheckoutConflictException If checkout overwrites local changes
      */
     @Override
     public Path checkout(CiTrigger trigger) throws Exception {
