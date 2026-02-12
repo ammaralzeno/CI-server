@@ -14,8 +14,9 @@ This CI server receives GitHub webhook notifications when code is pushed to a re
 - [Local Development with ngrok](#local-development-with-ngrok)
 - [Testing](#testing)
 - [Implementation](#implementation)
-- [Contributions](#contributions)
 - [Build list URL](#build-list-url)
+- [Assessment test](#assessment-test)
+- [Contributions](#contributions)
 - [License](#license)
 
 ## Dependencies
@@ -186,7 +187,37 @@ Test webhook payloads are located in `src/test/resources/webhook-payloads/`:
 ## Implementation
 
 ### Test compilation and execution 
-**TODO** how test execution has been implemented and unit-tested
+
+## CI Pipeline Architecture
+
+The CI pipeline executes the following steps when triggered by a webhook:
+
+### 1. Repository Checkout
+- Creates a temporary workspace directory
+- Clones the repository using the provided HTTPS URL
+- Checks out the specific branch and commit SHA from the webhook payload
+
+### 2. Compilation
+- Executes `mvn -B compile` in the workspace
+- Captures stdout/stderr logs
+- Pipeline stops if compilation fails
+
+### 3. Testing
+- Executes `mvn -B test` in the workspace
+- Captures test output and results
+- Pipeline stops if tests fail
+
+### 4. Result Handling
+- Build results are stored with status (SUCCESS, FAILURE, or ERROR)
+- Notifications are sent (e.g., GitHub commit status updates)
+- All logs and step results are persisted
+
+**Status Values**:
+- `SUCCESS`: All steps completed successfully
+- `FAILURE`: Compilation or tests failed
+- `ERROR`: Pipeline encountered an unexpected error (e.g., git clone failed)
+
+Each build is assigned a unique ID and timestamp for storing builds.
 
 The test execution is also unit tested by making sure both the compile method and test method return the correct result and logs depending on the process exit code.
 
@@ -198,7 +229,13 @@ Unit tests check: factory selection (token vs no token), correct status mapping 
 
 ## Build list URL
 The build list of our server is available here:
-https://subintegumentary-tobie-nonefficaciously.ngrok-free.dev/
+https://subintegumentary-tobie-nonefficaciously.ngrok-free.dev/builds
+
+To see logs for a specific build, add the build id from the list into the url: /builds/{build-id}
+
+## Assessment test
+
+Please edit the Assessment.md file in the assessment branch, and push the changes directly to the branch. This will trigger the CI pipeline and you will see the results of the build & tests directly on Github.
 
 ## Contributions
  - **Ammar Alzeno:** HTTP server for CI, webhook endpoints, unit tests for webhook handling, README, documentation
